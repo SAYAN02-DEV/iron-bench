@@ -161,16 +161,15 @@ func main() {
 	// =====================================================
 	// MOUNT VM IMAGE
 	// =====================================================
+	fmt.Println("Mounting VM filesystem...")
 
-	fmt.Println("Syncing filesystem...")
-
-	run("sync")
-
-	time.Sleep(1 * time.Second)
-
-	fmt.Println("Unmounting VM filesystem...")
-
-	run("sudo", "umount", "-l", mountDir)
+	run("sudo", "mount", vmRootfs, mountDir)
+	//
+	//run("sync")
+	//
+	//time.Sleep(1 * time.Second)
+	//
+	//run("sudo", "umount", "-l", mountDir)
 
 	// =====================================================
 	// READ PAYLOAD FILE
