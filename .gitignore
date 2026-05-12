@@ -1,0 +1,58 @@
+
+# NEVER commit the root filesystem or kernel images. They are massive.
+*.ext4
+*.img
+vmlinux*
+# Ignore the generated test payloads
+dummy_payload
+/bases/
+/microvms/
+
+# Binaries and compiled outputs
+bin/
+*.exe
+*.out
+*.test
+# Go workspace files
+go.work
+go.work.sum
+
+# Dependencies and build outputs
+node_modules/
+.next/
+out/
+build/
+.swc/
+# Next.js environment files
+.env*.local
+
+# Local terraform state and plugins
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars
+# Ignore AWS credentials if accidentally placed here
+credentials.csv
+
+# Do not commit the massive load testing logs or Redpanda dumps
+*.log
+logs/
+testdata/*.log
+*.prof
+*.mprof
+
+.env
+*.pem
+*.key
+*.cert
+*.rsa
+id_rsa*
+# Ignore SSH keys for the bare-metal servers
+ssh_keys/
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
