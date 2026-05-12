@@ -162,9 +162,15 @@ func main() {
 	// MOUNT VM IMAGE
 	// =====================================================
 
-	fmt.Println("Mounting VM filesystem...")
+	fmt.Println("Syncing filesystem...")
 
-	run("sudo", "mount", vmRootfs, mountDir)
+	run("sync")
+
+	time.Sleep(1 * time.Second)
+
+	fmt.Println("Unmounting VM filesystem...")
+
+	run("sudo", "umount", "-l", mountDir)
 
 	// =====================================================
 	// READ PAYLOAD FILE
@@ -262,6 +268,7 @@ exit 0
 	)
 
 	// STREAM VM OUTPUT TO TERMINAL
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -312,9 +319,20 @@ exit 0
 `, vmRootfs))
 
 	// =====================================================
-	// START MICROVM
+	// NETWORK INTERFACE
 	// =====================================================
 
+	put("/network-interfaces/net1", `
+{
+	"iface_id":"net1",
+	"guest_mac":"06:00:AC:10:00:02",
+	"host_dev_name":"tap0"
+}
+`)
+
+	// =====================================================
+	// START MICROVM
+	// =====================================================
 	put("/actions", `
 {
 	"action_type":"InstanceStart"
