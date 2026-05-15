@@ -30,3 +30,17 @@ func Connect(cfg *config.Config) {
 
 	log.Println("Connected to database")
 }
+
+func Close() {
+	if DB == nil {
+		return
+	}
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Println("failed to get sql DB:", err)
+		return
+	}
+	if err := sqlDB.Close(); err != nil {
+		log.Println("failed to close DB:", err)
+	}
+}
