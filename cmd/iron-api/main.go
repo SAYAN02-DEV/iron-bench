@@ -12,6 +12,7 @@ import (
 	"github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/SAYAN02-DEV/iron-bench/internal/db"
 	"github.com/SAYAN02-DEV/iron-bench/internal/handler"
+	"github.com/SAYAN02-DEV/iron-bench/internal/middleware"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 
 	router.HandleFunc("POST /api/user/signup", handler.Signup())
 	router.HandleFunc("POST /api/user/signin", handler.Signin())
+	router.Handle("POST /api/upload-url", middleware.RequireAuth(http.HandlerFunc(handler.GetUploadURL())))
+
 	addr := ":" + cfg.Port
 	srv := http.Server{
 		Addr:    addr,
