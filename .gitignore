@@ -50,7 +50,7 @@ testdata/*.log
 id_rsa*
 # Ignore SSH keys for the bare-metal servers
 ssh_keys/
-
+/config
 .DS_Store
 Thumbs.db
 .idea/
