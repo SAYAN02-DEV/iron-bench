@@ -11,6 +11,7 @@ import (
 
 	"github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/SAYAN02-DEV/iron-bench/internal/db"
+	"github.com/SAYAN02-DEV/iron-bench/internal/handler/user"
 )
 
 func main() {
@@ -23,13 +24,11 @@ func main() {
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, World!"))
-	})
+	router.HandleFunc("POST /api/user", user.New())
 
 	addr := ":" + cfg.Port
 	srv := http.Server{
-		Addr: addr,
+		Addr:    addr,
 		Handler: router,
 	}
 
