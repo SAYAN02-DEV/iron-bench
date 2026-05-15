@@ -12,4 +12,5 @@ require (
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 )

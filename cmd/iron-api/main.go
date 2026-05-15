@@ -29,7 +29,7 @@ func main() {
 	})
 
 	router.HandleFunc("POST /api/user/signup", handler.Signup())
-
+	router.HandleFunc("POST /api/user/signin", handler.Signin())
 	addr := ":" + cfg.Port
 	srv := http.Server{
 		Addr:    addr,
