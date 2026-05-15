@@ -1,14 +1,15 @@
 package db
 
 import (
-	"context"
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/SAYAN02-DEV/iron-bench/models"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var Conn *pgx.Conn
+var DB *gorm.DB
 
 func Connect() {
 	connStr := os.Getenv("DATABASE_URL")
@@ -16,10 +17,13 @@ func Connect() {
 		log.Fatal("DATABASE_URL is not set")
 	}
 
-	conn, err := pgx.Connect(context.Background(), connStr)
+	var err error
+	DB, err = gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect:", err)
 	}
 
-	Conn = conn
+	DB.AutoMigrate(&models.User{})
+
+	log.Println("Connected to database")
 }
