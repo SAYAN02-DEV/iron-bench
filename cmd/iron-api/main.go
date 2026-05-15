@@ -11,6 +11,7 @@ import (
 
 	"github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/SAYAN02-DEV/iron-bench/internal/db"
+	"github.com/SAYAN02-DEV/iron-bench/internal/handler"
 )
 
 func main() {
@@ -27,9 +28,11 @@ func main() {
 		w.Write([]byte("Hello, World!"))
 	})
 
+	router.HandleFunc("POST /api/user/signup", handler.Signup())
+
 	addr := ":" + cfg.Port
 	srv := http.Server{
-		Addr: addr,
+		Addr:    addr,
 		Handler: router,
 	}
 
