@@ -4,42 +4,35 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/SAYAN02-DEV/iron-bench/internal/db"
-	"github.com/SAYAN02-DEV/iron-bench/internal/handler"
-	"github.com/SAYAN02-DEV/iron-bench/internal/middleware"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Println(".env not found; falling back to environment variables")
+		log.Println("Failed to load config:", err)
 	}
 
 	db.Connect(cfg)
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /test/iron", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("iron-api OK"))
+	router.HandleFunc("GET /test/orchestrator", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Orchestrater OK"))
 	})
 
-	router.HandleFunc("POST /api/user/signup", handler.Signup())
-	router.HandleFunc("POST /api/user/signin", handler.Signin())
-	router.Handle("POST /api/user/upload-url", middleware.RequireAuth(http.HandlerFunc(handler.GetUploadURL())))
-
-	addr := ":" + cfg.Port
+	addr := ":" + cfg.OrchestratorPort
 	srv := http.Server{
 		Addr:    addr,
 		Handler: router,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	go func() {
@@ -50,12 +43,13 @@ func main() {
 	}()
 
 	<-ctx.Done()
-	log.Println("Shutting down...")
+	log.Println("Shutting down server...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Println("server shutdown error:", err)
+		log.Println("Failed to shutdown server:", err)
 	}
 
 	db.Close()
