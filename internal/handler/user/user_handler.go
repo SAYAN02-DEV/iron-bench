@@ -1,4 +1,4 @@
-package handler
+package user
 
 import (
 	"encoding/json"
@@ -110,9 +110,9 @@ func Signin() http.HandlerFunc {
 		}
 
 		claims := jwt.MapClaims{
-			"sub": user.ID,
+			"sub":   user.ID,
 			"email": user.Email,
-			"exp": time.Now().Add(24 * time.Hour).Unix(),
+			"exp":   time.Now().Add(24 * time.Hour).Unix(),
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		signed, err := token.SignedString([]byte(secret))
