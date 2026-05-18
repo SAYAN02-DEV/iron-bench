@@ -7,5 +7,8 @@ services:
       - SERVICES=s3,sqs
       - DEFAULT_REGION=us-east-1
       - AWS_DEFAULT_REGION=us-east-1
+      - PERSISTENCE=1
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - ./localstack-data:/var/lib/localstack
+      - ./init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
