@@ -11,7 +11,7 @@ import (
 
 	"github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/SAYAN02-DEV/iron-bench/internal/db"
-	"github.com/SAYAN02-DEV/iron-bench/internal/handler"
+	"github.com/SAYAN02-DEV/iron-bench/internal/handler/user"
 	"github.com/SAYAN02-DEV/iron-bench/internal/middleware"
 )
 
@@ -29,9 +29,9 @@ func main() {
 		w.Write([]byte("iron-api OK"))
 	})
 
-	router.HandleFunc("POST /api/user/signup", handler.Signup())
-	router.HandleFunc("POST /api/user/signin", handler.Signin())
-	router.Handle("POST /api/user/upload-url", middleware.RequireAuth(http.HandlerFunc(handler.GetUploadURL())))
+	router.HandleFunc("POST /api/user/signup", user.Signup())
+	router.HandleFunc("POST /api/user/signin", user.Signin())
+	router.Handle("POST /api/user/upload-url", middleware.RequireAuth(http.HandlerFunc(user.GetUploadURL())))
 
 	addr := ":" + cfg.Port
 	srv := http.Server{
