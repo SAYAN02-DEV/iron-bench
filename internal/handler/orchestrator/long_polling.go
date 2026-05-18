@@ -1,4 +1,4 @@
-package orchestrator
+package main
 
 import (
 	"context"
@@ -6,7 +6,10 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"os"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	appconfig "github.com/SAYAN02-DEV/iron-bench/internal/config"
 	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -21,7 +24,35 @@ func main() {
 		log.Println(".env not found; falling back to environment variables")
 	}
 
-	awsCfg, err := awscfg.LoadDefaultConfig(context.TODO(), awscfg.WithRegion("us-east-1"))
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = "us-east-1"
+	}
+	accessKey := os.Getenv("AWS_KEY")
+	if accessKey == "" {
+		accessKey = os.Getenv("AWS_ACCESS_KEY_ID")
+	}
+	secretKey := os.Getenv("AWS_SECRET")
+	if secretKey == "" {
+		secretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	}
+	endpointURL := os.Getenv("AWS_URL")
+
+	loadOpts := []func(*awscfg.LoadOptions) error{
+		awscfg.WithRegion(region),
+	}
+	if accessKey != "" && secretKey != "" {
+		loadOpts = append(loadOpts, awscfg.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")))
+	}
+	if endpointURL != "" {
+		loadOpts = append(loadOpts, awscfg.WithEndpointResolverWithOptions(
+			aws.EndpointResolverWithOptionsFunc(func(service, region string, opts ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{URL: endpointURL, HostnameImmutable: true}, nil
+			}),
+		))
+	}
+
+	awsCfg, err := awscfg.LoadDefaultConfig(context.TODO(), loadOpts...)
 	if err != nil {
 		log.Fatal("Failed to load AWS config:", err)
 	}
