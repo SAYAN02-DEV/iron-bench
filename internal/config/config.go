@@ -11,6 +11,9 @@ type Config struct {
 	Port             string
 	JWTSecret        string
 	OrchestratorPort string
+	LongPollingSeconds string
+	SQSURL           string
+	SQSMaxMessages   string
 }
 
 func getEnv(key, fallback string) string {
@@ -27,6 +30,9 @@ func Load() (*Config, error) {
 		Port:             getEnv("PORT", "8080"),
 		OrchestratorPort: getEnv("ORCHESTRATOR_PORT", "8000"),
 		JWTSecret:        os.Getenv("JWT_SECRET"),
+		LongPollingSeconds: getEnv("LONG_POLLING_SECONDS", "10"),
+		SQSURL:           os.Getenv("SQS_URL"),
+		SQSMaxMessages:   getEnv("SQS_MAX_MESSAGES", "10"),
 	}
 	return cfg, err
 }

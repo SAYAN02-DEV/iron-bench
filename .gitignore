@@ -19,6 +19,7 @@ go.work.sum
 
 # Dependencies and build outputs
 node_modules/
+localstack-data/
 .next/
 out/
 build/
