@@ -10,6 +10,7 @@ import (
 
 	"github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/SAYAN02-DEV/iron-bench/internal/db"
+	"github.com/SAYAN02-DEV/iron-bench/internal/handler/orchestrator"
 )
 
 func main() {
@@ -25,6 +26,8 @@ func main() {
 	router.HandleFunc("GET /test/orchestrator", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Orchestrater OK"))
 	})
+
+	router.HandleFunc("POST /file/download", orchestrator.DownloadFilesHandler())
 
 	addr := ":" + cfg.OrchestratorPort
 	srv := http.Server{

@@ -1,25 +1,24 @@
-package orchestrator
+package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"os"
 	"strconv"
 	"time"
+	"os"
 
-	appconfig "github.com/SAYAN02-DEV/iron-bench/internal/config"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	appconfig "github.com/SAYAN02-DEV/iron-bench/internal/config"
+	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
-func RunLongPolling() {
+func main() {
+	// Setup
+
 	cfg, err := appconfig.Load()
 	if err != nil {
 		log.Println(".env not found; falling back to environment variables")
@@ -82,12 +81,10 @@ func RunLongPolling() {
 	}
 	maxMessages := int(maxMessagesParsed)
 
-	baseURL := "http://localhost:" + cfg.OrchestratorPort
-	httpClient := &http.Client{Timeout: 15 * time.Second}
-
 	log.Println("Consumer started, waiting for messages...")
 
 	for {
+		// Long poll — blocks here up to 20s
 		resp, err := client.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
 			QueueUrl:            &cfg.SQSURL,
 			MaxNumberOfMessages: int32(maxMessages),
@@ -99,61 +96,29 @@ func RunLongPolling() {
 			continue
 		}
 
+		// Accumulate into buffer
 		buffer = append(buffer, resp.Messages...)
 		fmt.Printf("Buffer: %d/%d\n", len(buffer), maxMessages)
 
+		// Process when we hit maxMessages
 		if len(buffer) >= maxMessages {
 			batch := buffer[:maxMessages]
-			buffer = buffer[maxMessages:]
-
-			if err := sendDownloadRequest(httpClient, baseURL, batch); err != nil {
-				log.Println("download request failed:", err)
-				buffer = append(batch, buffer...)
-				continue
-			}
+			buffer = buffer[maxMessages:] // keep remainder
 
 			processBatch(client, cfg.SQSURL, batch)
 		}
 	}
 }
 
-func sendDownloadRequest(client *http.Client, baseURL string, batch []types.Message) error {
-	requests := make([]FileRequest, 0, len(batch))
-	for _, msg := range batch {
-		if msg.Body == nil || *msg.Body == "" {
-			return fmt.Errorf("message body is empty")
-		}
-		var req FileRequest
-		if err := json.Unmarshal([]byte(*msg.Body), &req); err != nil {
-			return fmt.Errorf("invalid message body: %w", err)
-		}
-		requests = append(requests, req)
-	}
-
-	payload, err := json.Marshal(requests)
-	if err != nil {
-		return fmt.Errorf("marshal request: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, baseURL+"/file/download", bytes.NewReader(payload))
-	if err != nil {
-		return fmt.Errorf("create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("download API returned %s", resp.Status)
-	}
-	return nil
-}
-
 func processBatch(client *sqs.Client, queueURL string, batch []types.Message) {
+	fmt.Printf("Processing batch of %d messages\n", len(batch))
+
+	// Your processing logic here
+	for _, msg := range batch {
+		fmt.Println("Message:", *msg.Body)
+	}
+
+	// Delete after successful processing
 	entries := make([]types.DeleteMessageBatchRequestEntry, len(batch))
 	for i, msg := range batch {
 		id := fmt.Sprintf("%d", i)
@@ -173,4 +138,3 @@ func processBatch(client *sqs.Client, queueURL string, batch []types.Message) {
 		fmt.Println("Batch deleted from queue")
 	}
 }
-

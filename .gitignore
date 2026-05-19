@@ -42,6 +42,11 @@ logs/
 testdata/*.log
 *.prof
 *.mprof
+/vm_*.log
+/firecracker_*.log
+
+# Mock user servers and orchestrator variants
+/mock/users/
 
 .env
 *.pem

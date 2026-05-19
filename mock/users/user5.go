@@ -6,9 +6,13 @@ import (
 )
 
 func main() {
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("hello from ordderbook"))
+		_, _ = w.Write([]byte("hello from orderbook user5"))
 	})
 
 	addr := ":8080"
