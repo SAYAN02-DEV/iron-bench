@@ -22,6 +22,14 @@ const (
 	mountDir          = "/home/sayan/firecracker/rootfs_mount"
 )
 
+// Build contestant's Go code on the host.
+func buildContestantBinary(srcFile string, outputPath string) error {
+	cmd := exec.Command("go", "build", "-o", outputPath, srcFile)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 // FIRECRACKER API HELPER
 
 func put(endpoint string, body string) {
@@ -81,18 +89,39 @@ func run(name string, args ...string) {
 	}
 }
 
+// Inject the built binary into the payload drive.
+func injectBinary(binaryPath string, mountPath string) {
+	guestBinaryPath := filepath.Join(mountPath, "orderbook-server")
+	run("sudo", "cp", binaryPath, guestBinaryPath)
+	run("sudo", "chmod", "+x", guestBinaryPath)
+}
+
 // MAIN
 
 func main() {
 
 	// PAYLOAD PATH
-	if len(os.Args) < 2 {
+	defaultPayloadPath := ""
+	defaultServerPath := ""
+	if cwd, err := os.Getwd(); err == nil {
+		repoRoot := cwd
+		if filepath.Base(cwd) == "orchestrator" && filepath.Base(filepath.Dir(cwd)) == "mock" {
+			repoRoot = filepath.Dir(filepath.Dir(cwd))
+		}
+		defaultPayloadPath = filepath.Join(repoRoot, "mock", "scripts", "test_payload.sh")
+		defaultServerPath = filepath.Join(repoRoot, "mock", "main.go")
+	}
+
+	payloadPath := defaultPayloadPath
+	serverMain := defaultServerPath
+	if len(os.Args) >= 2 {
+		payloadPath = os.Args[1]
+	}
+	if payloadPath == "" || serverMain == "" {
 		fmt.Println("Usage:")
 		fmt.Println("go run main.go <payload-file>")
 		return
 	}
-
-	payloadPath := os.Args[1]
 
 	fmt.Println()
 	fmt.Println("===================================")
@@ -104,9 +133,9 @@ func main() {
 	os.Remove(socketPath)
 	os.Remove(payloadDrive) // Clean up any old tiny drives
 
-	// 1. CREATE TINY 10MB PAYLOAD DRIVE (The "USB Stick")
-	fmt.Println("Creating 10MB payload workspace...")
-	run("dd", "if=/dev/zero", "of="+payloadDrive, "bs=1M", "count=10")
+	// 1. CREATE PAYLOAD DRIVE (Room for binary + payload)
+	fmt.Println("Creating 64MB payload workspace...")
+	run("dd", "if=/dev/zero", "of="+payloadDrive, "bs=1M", "count=64")
 	run("mkfs.ext4", payloadDrive)
 
 	// CREATE MOUNT DIRECTORY
@@ -115,6 +144,13 @@ func main() {
 	// 2. MOUNT THE TINY DRIVE (Not the big OS drive!)
 	fmt.Println("Mounting tiny payload drive...")
 	run("sudo", "mount", payloadDrive, mountDir)
+
+	// Build contestant binary and inject it into the payload drive.
+	compiledBinary := filepath.Join(os.TempDir(), "orderbook-server")
+	if err := buildContestantBinary(serverMain, compiledBinary); err != nil {
+		panic(err)
+	}
+	injectBinary(compiledBinary, mountDir)
 
 	// READ PAYLOAD FILE
 	fmt.Println("Reading payload...")
@@ -169,52 +205,52 @@ func main() {
 	// LOGGER
 	put("/logger", `
 {
-    "log_path":"./firecracker.log",
-    "level":"Debug"
+  "log_path":"./firecracker.log",
+  "level":"Debug"
 }
 `)
 
 	// BOOT SOURCE
 	put("/boot-source", fmt.Sprintf(`
 {
-    "kernel_image_path":"%s",
-    "boot_args":"console=ttyS0 reboot=k panic=1"
+  "kernel_image_path":"%s",
+  "boot_args":"console=ttyS0 reboot=k panic=1"
 }
 `, kernelPath))
 
 	// DRIVE 1: BASE OS (Strictly Read-Only)
 	put("/drives/rootfs", fmt.Sprintf(`
 {
-    "drive_id":"rootfs",
-    "path_on_host":"%s",
-    "is_root_device":true,
-    "is_read_only":true
+  "drive_id":"rootfs",
+  "path_on_host":"%s",
+  "is_root_device":true,
+  "is_read_only":true
 }
 `, baseRootfs))
 
 	// DRIVE 2: THE PAYLOAD (Read-Write)
 	put("/drives/payload", fmt.Sprintf(`
 {
-    "drive_id":"payload",
-    "path_on_host":"%s",
-    "is_root_device":false,
-    "is_read_only":false
+  "drive_id":"payload",
+  "path_on_host":"%s",
+  "is_root_device":false,
+  "is_read_only":false
 }
 `, payloadDrive))
 
 	// NETWORK INTERFACE
 	put("/network-interfaces/net1", `
 {
-    "iface_id":"net1",
-    "guest_mac":"06:00:AC:10:00:02",
-    "host_dev_name":"tap0"
+  "iface_id":"net1",
+  "guest_mac":"06:00:AC:10:00:02",
+  "host_dev_name":"tap0"
 }
 `)
 
 	// START MICROVM
 	put("/actions", `
 {
-    "action_type":"InstanceStart"
+  "action_type":"InstanceStart"
 }
 `)
 
